@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 // 标记入口点，防止直接访问 app 目录文件
 define('APP_ENTRY_POINT', true);
-define('APP_VERSION', '1.3.0');
+define('APP_VERSION', '1.3.1');
 // 应用安全响应头
 if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
