@@ -165,6 +165,14 @@ if (!function_exists('default_theme_schema_graph')) {
                 'url' => rtrim(base_url(), '/') . '/',
                 'name' => $siteName,
                 'publisher' => ['@id' => $organizationId],
+                'potentialAction' => [
+                    '@type' => 'SearchAction',
+                    'target' => [
+                        '@type' => 'EntryPoint',
+                        'urlTemplate' => rtrim(base_url(), '/') . '/search?q={search_term_string}',
+                    ],
+                    'query-input' => 'required name=search_term_string',
+                ],
             ],
             [
                 '@type' => 'WebPage',

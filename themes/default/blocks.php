@@ -263,6 +263,7 @@ return [
         'label' => '页头导航',
         'description' => '网站顶部导航栏',
         'fields' => [
+            'search_placeholder' => ['type' => 'text', 'label' => 'Search Placeholder', 'default' => 'Search products, articles and cases'],
             'cta_text' => ['type' => 'text', 'label' => 'CTA Button Text', 'default' => 'Request Quote'],
             'cta_url'  => ['type' => 'text', 'label' => 'CTA Button URL',  'default' => '/contact'],
         ],

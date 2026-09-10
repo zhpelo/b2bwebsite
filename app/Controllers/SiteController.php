@@ -6,6 +6,7 @@ namespace App\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\PostModel;
+use App\Models\SiteSearch;
 use App\Models\Message;
 use App\Models\Inquiry;
 use App\Plugins\Exceptions\FormValidationException;
@@ -28,6 +29,26 @@ class SiteController extends BaseController {
                 'keywords' => $this->siteData['site']['seo_keywords'] ?? '',
             ]
         ]);
+    }
+
+    public function search(): void {
+        $query = mb_substr(trim((string)($_GET['q'] ?? '')), 0, 120);
+        $type = trim((string)($_GET['type'] ?? 'all'));
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $result = (new SiteSearch())->search($query, $type, $page, 12);
+
+        $pageTitle = $query === '' ? 'Search' : 'Search results for “' . $query . '”';
+        $this->renderSite('search', array_merge($result, [
+            'query' => $query,
+            'seo' => [
+                'title' => $pageTitle . ' - ' . $this->siteData['site']['name'],
+                'description' => $query === ''
+                    ? 'Search products, articles and cases.'
+                    : 'Search results for ' . $query . '.',
+                'robots' => 'noindex,follow',
+                'canonical' => base_url() . '/search',
+            ],
+        ]));
     }
 
     public function products(): void {

@@ -37,6 +37,7 @@ function register_routes(Router $router): void {
     $router->add('POST', '/admin/plugins/jobs/action', [PluginAdminController::class, 'jobAction']);
     // 前台
     $router->add('GET', '/', [SiteController::class, 'home']);
+    $router->add('GET', '/search', [SiteController::class, 'search']);
     $router->add('GET', '/products', [SiteController::class, 'products']);
     $router->add('GET', '/product-category/:slug', [SiteController::class, 'productCategory']);
     $router->add('GET', '/product/:slug', [SiteController::class, 'productDetail']);

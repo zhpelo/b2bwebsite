@@ -18,6 +18,10 @@ $basePath = base_path();
 if ($basePath !== '' && str_starts_with($currentPath, $basePath)) {
     $currentPath = substr($currentPath, strlen($basePath)) ?: '/';
 }
+$headerSearchQuery = $currentPath === '/search'
+    ? mb_substr(trim((string)($_GET['q'] ?? '')), 0, 120)
+    : '';
+$searchPlaceholder = block('header', 'search_placeholder', 'Search products, articles and cases');
 
 $seoContext = [
     'item' => $item ?? null,
@@ -158,6 +162,9 @@ $schemaGraph = default_theme_schema_graph($site, [
                 <!-- Desktop Navigation -->
                 <div class="hidden lg:flex items-center space-x-1">
                     <?php render_menu('main-nav', false); ?>
+                    <button id="desktop-search-btn" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-700 transition-colors hover:bg-gray-100 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500" aria-label="Open site search" aria-controls="desktop-search-panel" aria-expanded="false">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                    </button>
                     <?= get_google_translate_widget($site, 'px-4 py-2 text-gray-700') ?>
                     <a href="<?= url(block('header', 'cta_url', '/contact')) ?>" class="ml-4 px-6 py-2.5 bg-brand-600 text-white font-medium rounded-lg hover:bg-brand-700 transition-colors shadow-sm">
                         <?= h(block('header', 'cta_text')) ?>
@@ -170,10 +177,35 @@ $schemaGraph = default_theme_schema_graph($site, [
                 </button>
             </div>
 
+            <!-- Desktop Search -->
+            <div id="desktop-search-panel" class="absolute inset-x-0 top-full hidden border-t border-gray-100 bg-white shadow-lg" aria-hidden="true">
+                <div class="container mx-auto px-4 py-5 lg:px-8">
+                    <form action="<?= url('/search') ?>" method="get" role="search" class="mx-auto flex max-w-3xl items-center gap-3">
+                        <label for="desktop-search-input" class="sr-only">Search the website</label>
+                        <div class="relative flex-1">
+                            <i class="fas fa-search pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
+                            <input id="desktop-search-input" type="search" name="q" value="<?= h($headerSearchQuery) ?>" maxlength="120" required autocomplete="off" placeholder="<?= h($searchPlaceholder) ?>" class="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-gray-900 outline-none transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100">
+                        </div>
+                        <button type="submit" class="inline-flex items-center rounded-xl bg-brand-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-brand-700">Search</button>
+                        <button id="desktop-search-close" type="button" class="inline-flex h-12 w-12 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900" aria-label="Close site search">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
             <!-- Mobile Navigation -->
             <div id="mobile-menu" class="hidden lg:hidden border-t border-gray-100 bg-white max-h-[calc(100svh-4rem)] overflow-y-auto">
                 <div class="py-4 space-y-2">
                     <?php render_menu('main-nav', true); ?>
+                    <form action="<?= url('/search') ?>" method="get" role="search" class="px-4 pt-2">
+                        <label for="mobile-search-input" class="sr-only">Search the website</label>
+                        <div class="flex items-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
+                            <i class="fas fa-search ml-4 text-gray-400" aria-hidden="true"></i>
+                            <input id="mobile-search-input" type="search" name="q" value="<?= h($headerSearchQuery) ?>" maxlength="120" required autocomplete="off" placeholder="<?= h($searchPlaceholder) ?>" class="min-w-0 flex-1 bg-transparent px-3 py-3 text-sm text-gray-900 outline-none">
+                            <button type="submit" class="self-stretch bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700">Search</button>
+                        </div>
+                    </form>
                     <div class="px-4 pt-2">
                         <?= get_google_translate_widget($site, 'block w-full rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-50') ?>
                     </div>
@@ -191,28 +223,62 @@ $schemaGraph = default_theme_schema_graph($site, [
         document.addEventListener('DOMContentLoaded', function () {
             const button = document.getElementById('mobile-menu-btn');
             const menu = document.getElementById('mobile-menu');
-            if (!button || !menu) return;
-
-            button.addEventListener('click', function () {
-                const isOpen = !menu.classList.contains('hidden');
-                menu.classList.toggle('hidden', isOpen);
-                button.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-                document.body.classList.toggle('overflow-hidden', !isOpen);
-            });
-
-            menu.querySelectorAll('a').forEach(function (link) {
-                link.addEventListener('click', function () {
-                    menu.classList.add('hidden');
-                    button.setAttribute('aria-expanded', 'false');
-                    document.body.classList.remove('overflow-hidden');
+            if (button && menu) {
+                button.addEventListener('click', function () {
+                    const isOpen = !menu.classList.contains('hidden');
+                    menu.classList.toggle('hidden', isOpen);
+                    button.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+                    document.body.classList.toggle('overflow-hidden', !isOpen);
                 });
-            });
+
+                menu.querySelectorAll('a').forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        menu.classList.add('hidden');
+                        button.setAttribute('aria-expanded', 'false');
+                        document.body.classList.remove('overflow-hidden');
+                    });
+                });
+            }
+
+            const searchButton = document.getElementById('desktop-search-btn');
+            const searchPanel = document.getElementById('desktop-search-panel');
+            const searchClose = document.getElementById('desktop-search-close');
+            const searchInput = document.getElementById('desktop-search-input');
+
+            function closeSearch() {
+                if (!searchButton || !searchPanel) return;
+                searchPanel.classList.add('hidden');
+                searchPanel.setAttribute('aria-hidden', 'true');
+                searchButton.setAttribute('aria-expanded', 'false');
+            }
+
+            if (searchButton && searchPanel) {
+                searchButton.addEventListener('click', function () {
+                    const willOpen = searchPanel.classList.contains('hidden');
+                    searchPanel.classList.toggle('hidden', !willOpen);
+                    searchPanel.setAttribute('aria-hidden', willOpen ? 'false' : 'true');
+                    searchButton.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+                    if (willOpen && searchInput) {
+                        window.setTimeout(function () { searchInput.focus(); }, 0);
+                    }
+                });
+                if (searchClose) searchClose.addEventListener('click', closeSearch);
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape' && !searchPanel.classList.contains('hidden')) {
+                        closeSearch();
+                        searchButton.focus();
+                    }
+                });
+            }
 
             window.addEventListener('resize', function () {
                 if (window.innerWidth >= 1024) {
-                    menu.classList.add('hidden');
-                    button.setAttribute('aria-expanded', 'false');
+                    if (menu) menu.classList.add('hidden');
+                    if (button) button.setAttribute('aria-expanded', 'false');
                     document.body.classList.remove('overflow-hidden');
+                } else {
+                    closeSearch();
                 }
             });
         });
